@@ -3,7 +3,7 @@ require 'watir-webdriver'
 
 Before do
 	#supports :chrome :safari :firefox :ie	
-	@browser = Watir::Browser.new :safari
+	@browser = Watir::Browser.new :chrome
 end
 
 
