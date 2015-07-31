@@ -1,38 +1,31 @@
 #Step Definitions
 
-=begin
-PageObject::PageFactory has two methods, visit() and on() which replace the 
-need to use the Web Driver method, browser.goto() by passing the PageFactory
-module to the World object created by Cucumber in env.rb
-PageFactory also creates a @current_page instance variable for repetative
-tasks on multiple pages, such as validating strings on a page
-=end
-
 Given(/^I am on the puppy adoption site$/) do
-  visit(HomePage) #replaces   @browser.goto "http://puppies.herokuapp.com"
+  @browser.goto "http://puppies.herokuapp.com"
   sleep 1
 end
 
-When(/^I click the View Details button for "([^"]*)"$/) do |name|
-  on(HomePage).select_puppy name
+When(/^I click the first View Details button$/) do
+  @browser.button(:value=>'View Details', :index => 0).click
+end
+
+When(/^I click the second View Details button$/) do
+  @browser.button(:value=>'View Details', :index => 1).click
 end
 
 When(/^I click the Adopt Me button$/) do
-  on(DetailsPage).add_to_cart
+  @browser.button(:value=>'Adopt Me!').click
+  @cart = ShoppingCartPage.new(@browser)
 end
 
 When(/^I ciick the Adopt Another Puppy button$/) do
-  on(ShoppingCartPage).continue_shopping
+  @browser.button(:value => 'Adopt Another Puppy').click
 end
 
 When(/^I click the Complete the Adoption button$/) do
-  on(ShoppingCartPage).proceed_to_checkout
+  @browser.button(:value => 'Complete the Adoption').click
 end
 
-=begin
-The difference between the Wed Driver methods text_field and text_area 
-is that textarea supports multiple lines of text
-=end
 When(/^I enter "([^"]*)" in the name field$/) do |name|
   @browser.text_field(:id=>'order_name').set(name)
 end
@@ -54,21 +47,36 @@ When(/^I click the Place Order button$/) do
 end
 
 Then(/^I should see "([^"]*)"$/) do |expected|
-  if @current_page.text.should include expected
+  if @browser.text.should include expected
 		puts 'TEST PASSED!'
-  end
+	else fail "\nDEFECT: Expected message not found on page"
+	end 
 end
 
-Then(/^I should see "([^"]*)" as the name for (line item \d+)$/) do |name, line_item|
-  on(ShoppingCartPage).name_for_line_item(line_item).should include name
+=begin
+BRITTLE: This code would break if there are any changes to this HTML table
+EASY FIX: To avoid having to identify HTML elements by index,
+    ask the developer to add name and id attributes to the elements
+=end
+Then(/^I should see "([^"]*)" as the name for line item (\d+)$/) do |name, line_item|
+  row = (line_item.to_i - 1) * 6
+  if @browser.table(:index => 0)[row][1].text.should include name
+    puts 'TEST PASSED!'
+  else fail "\nDEFECT: Expected name not found for line item: " + line_item
+  end 
 end
 
-Then(/^I should see "([^"]*)" as the subtotal for (line item \d+)$/) do |subtotal, line_item|
-  on(ShoppingCartPage).subtotal_for_line_item(line_item).should include subtotal
+Then(/^I should see "([^"]*)" as the subtotal for line item (\d+)$/) do |subtotal, line_item|
+  row = (line_item.to_i - 1) * 6
+  if @browser.table(:index => 0)[row][3].text.should include subtotal
+    puts 'TEST PASSED!'
+  else fail "\nDEFECT: Expected subtotal amount not found for line item: " + line_item
+  end 
 end
 
 Then(/^I should see "([^"]*)" as the cart total$/) do |total|
-  if on(ShoppingCartPage).cart_total.should == total
+  if @cart.cart_total.should == total
     puts 'TEST PASSED!'
-  end
+  else fail "\nDEFECT: Expected total amount not found"
+  end 
 end
